@@ -14,7 +14,6 @@ const GameGridStyled = styled.div<{ size: number; organismSize: string }>`
     ${({ size }) => size},
     ${({ organismSize }) => organismSize}
   );
-  grid-gap: 7px;
 `;
 
 interface GameGrid {
