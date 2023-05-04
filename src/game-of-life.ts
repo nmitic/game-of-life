@@ -49,43 +49,28 @@ export const getAliveNeighborsCount = (organismCoordinates: string, universe: Un
   .length
 }
 
-export const advanceGeneration = (universe: UniverseType):UniverseType => (
-  Object.keys(universe).reduce((acc, organismCoordinates) => {
+export const advanceGeneration = (universe: UniverseType):UniverseType => {
+
+  let nextGeneration = {...universe}
+
+  for (const organismCoordinates in universe) {
     const aliveNeighborsCount = getAliveNeighborsCount(organismCoordinates , universe)
 
-    /*
-      2) Any live cell with two or three live neighbors lives on to the next generation
-    */
     if (universe[organismCoordinates] === ORGANISM_STATUS.ALIVE && aliveNeighborsCount === 2) {
-      return {
-        ...acc,
-        [organismCoordinates]:  ORGANISM_STATUS.ALIVE
-      }
-    }
-    /*
-      4) Any dead cell with exactly three live neighbors becomes a live cell, as if by reproduction
-      ** This check also covers rule #2 **
-    */
+      nextGeneration[organismCoordinates] = ORGANISM_STATUS.ALIVE
+    } 
+
     if (aliveNeighborsCount === 3) {
-      return {
-        ...acc,
-        [organismCoordinates]:  ORGANISM_STATUS.ALIVE
-      }
-    }
-    /*
-      1) Any live cell with fewer than two live neighbors dies, as if by underpopulation
-      3) Any live cell with more than three live neighbors dies, as if by overpopulation
-    */
-    if (aliveNeighborsCount < 2 || aliveNeighborsCount > 3) {
-      return {
-        ...acc,
-        [organismCoordinates]:  ORGANISM_STATUS.DEAD
-      }
+      nextGeneration[organismCoordinates] = ORGANISM_STATUS.ALIVE
     }
 
-    return {...acc, [organismCoordinates]: universe[organismCoordinates]}
-  }, {})
-)
+    if (aliveNeighborsCount < 2 || aliveNeighborsCount > 3) {
+      nextGeneration[organismCoordinates] = ORGANISM_STATUS.DEAD
+    }
+  }
+
+  return nextGeneration
+}
 
 // set all organism to be dead
 export const destroyUniverse = (universe: UniverseType):DestroyedUniverseType => Object.keys(universe).reduce((acc, key) => ({...acc, [key]: 0}), {})
