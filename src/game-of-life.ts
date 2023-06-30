@@ -1,84 +1,77 @@
-export enum ORGANISM_STATUS {
-  ALIVE = 1,
-  DEAD = 0
-}
+export type Cell = 0 | 1;
 
-export type OrganismStatusType = ORGANISM_STATUS.ALIVE | ORGANISM_STATUS.DEAD
+export type CellState = 0 | 1;
 
-export type UniverseType = {[k: string]: OrganismStatusType}
-export type DestroyedUniverseType = {[k: string]: 0}
+export function hashLife(cells: CellState[][]): CellState[][] {
+  const numRows = cells.length;
+  const numCols = cells[0].length;
 
-export const makeUniverse = (universeSize: number, chaosMode = false):UniverseType  => {
-  let universe = {} as UniverseType
-  const universeItems = universeSize * universeSize
+  // Create a new array to store the next state of the universe
+  const nextState = Array.from({ length: numRows }, () => new Array<CellState>(numCols));
 
-  for (let index = 0; index < universeItems; index++) {
-    // calculating organism coordinates based on the universe size
-    const xCoordinate = (index - index % universeSize) / universeSize
-    const yCoordinate = index % universeSize;
-    const status = chaosMode ? Math.round(Math.random()) : ORGANISM_STATUS.DEAD
-    // storing coordinates in a string so it can be accessed using object lookup
-    universe[`${xCoordinate},${yCoordinate}`] = status as OrganismStatusType
+  // Helper function to count the number of live neighbors for a given cell
+  function countLiveNeighbors(row: number, col: number): number {
+    let count = 0;
+    for (let i = row - 1; i <= row + 1; i++) {
+      for (let j = col - 1; j <= col + 1; j++) {
+        if (i >= 0 && i < numRows && j >= 0 && j < numCols && !(i === row && j === col)) {
+          count += cells[i][j];
+        }
+      }
+    }
+    return count;
   }
 
-  return universe
-}
+  // Iterate over each cell in the current state
+  for (let row = 0; row < numRows; row++) {
+    for (let col = 0; col < numCols; col++) {
+      const liveNeighbors = countLiveNeighbors(row, col);
+      const currentState = cells[row][col];
 
-export const getAliveNeighborsCount = (organismCoordinates: string, universe: UniverseType):number => {
-  const [ xCoordinate, yCoordinate ] = organismCoordinates.split(',').map(Number)
-
-  // calculate all 8 neighbors coordinates surrounding the organism
-  return [
-    [xCoordinate - 1, yCoordinate - 1],
-    [xCoordinate, yCoordinate - 1],
-    [xCoordinate + 1, yCoordinate - 1],
-    [xCoordinate - 1, yCoordinate],
-    [xCoordinate + 1, yCoordinate],
-    [xCoordinate - 1, yCoordinate + 1],
-    [xCoordinate, yCoordinate + 1],
-    [xCoordinate + 1, yCoordinate + 1],
-  ]
-  .filter(organismCoordinates => {
-    //filtering organism which are out of grid boundaries 
-    return !organismCoordinates.some(coordinates => coordinates > Math.sqrt(Object.keys(universe).length) || coordinates < 0)
-  })
-  .filter(organismCoordinates => {
-    //removing dead organisms
-    return universe[organismCoordinates.toString()]
-  })
-  .length
-}
-
-export const advanceGeneration = (universe: UniverseType):UniverseType => {
-
-  let nextGeneration = {...universe}
-
-  for (const organismCoordinates in universe) {
-    const aliveNeighborsCount = getAliveNeighborsCount(organismCoordinates , universe)
-
-    if (universe[organismCoordinates] === ORGANISM_STATUS.ALIVE && aliveNeighborsCount === 2) {
-      nextGeneration[organismCoordinates] = ORGANISM_STATUS.ALIVE
-    } 
-
-    if (aliveNeighborsCount === 3) {
-      nextGeneration[organismCoordinates] = ORGANISM_STATUS.ALIVE
-    }
-
-    if (aliveNeighborsCount < 2 || aliveNeighborsCount > 3) {
-      nextGeneration[organismCoordinates] = ORGANISM_STATUS.DEAD
+      // Apply the rules of the Game of Life
+      if (currentState === 1 && (liveNeighbors < 2 || liveNeighbors > 3)) {
+        nextState[row][col] = 0; // Cell dies due to underpopulation or overpopulation
+      } else if (currentState === 0 && liveNeighbors === 3) {
+        nextState[row][col] = 1; // Cell becomes alive due to reproduction
+      } else {
+        nextState[row][col] = currentState; // Cell remains in its current state
+      }
     }
   }
 
-  return nextGeneration
+  return nextState;
 }
 
-// set all organism to be dead
-export const destroyUniverse = (universe: UniverseType):DestroyedUniverseType => Object.keys(universe).reduce((acc, key) => ({...acc, [key]: 0}), {})
 
-// naive but useful way for checking shallow equality 
-const shallowCompare = (obj1: {[k: string]: any}, obj2: {[k: string]: any}):boolean =>
-  Object.keys(obj1).length === Object.keys(obj2).length &&
-  Object.keys(obj1).every(key => obj1[key] === obj2[key]);
+export function generateRandomArray(rows: number, cols: number): Cell[][] {
+  const array: Cell[][] = [];
 
-// checks if there are changes between generations
-export const noChangesInTheUniverse = (oldUniverse: UniverseType, newUniverse: UniverseType):boolean => shallowCompare(oldUniverse, newUniverse)
+  for (let i = 0; i < rows; i++) {
+    const row: Cell[] = [];
+
+    for (let j = 0; j < cols; j++) {
+      const value = Math.random() < 0.5 ? 0 : 1;
+      row.push(value);
+    }
+
+    array.push(row);
+  }
+
+  return array;
+}
+
+export function generateEmptyArray(rows: number, cols: number): Cell[][] {
+  const array: Cell[][] = [];
+
+  for (let i = 0; i < rows; i++) {
+    const row: Cell[] = [];
+
+    for (let j = 0; j < cols; j++) {
+      row.push(0);
+    }
+
+    array.push(row);
+  }
+
+  return array;
+}

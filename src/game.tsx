@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled, { createGlobalStyle } from "styled-components";
 import {
-  makeUniverse,
-  advanceGeneration,
-  destroyUniverse,
-  noChangesInTheUniverse,
-  UniverseType,
+  generateRandomArray,
+  hashLife,
+  Cell,
+  generateEmptyArray,
 } from "./game-of-life";
 
 import GameControls from "./components/game-controls";
@@ -18,8 +17,7 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 const GameStyled = styled.div`
-  max-width: 800px;
-  margin: 0 auto;
+  margin: -8px auto;
 `;
 
 const DeclaimerStyled = styled.p`
@@ -30,114 +28,35 @@ const DeclaimerStyled = styled.p`
 
 interface UniverseProps {
   size: number;
-  organismSize?: string;
+  initialUniverse: Cell[][];
 }
 
-const Game: React.FC<UniverseProps> = ({ size, organismSize = "20px" }) => {
-  const [universe, setUniverse] = useState<UniverseType>(
-    makeUniverse(size, false)
-  );
-  const [gameId, setGameId] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [history, setHistory] = useState<UniverseType[]>([]);
+const Game: React.FC<UniverseProps> = ({ size, initialUniverse }) => {
+  const [universe, setUniverse] = useState(initialUniverse);
+  const [running, setRunning] = useState(false);
 
-  const runGameBackward = (history: UniverseType[]): void => {
-    setPlaying(true);
-    const hasNoHistory = history.length === 0;
-
-    if (hasNoHistory) {
-      stopGame();
-      return;
+  useEffect(() => {
+    if (running) {
+      setTimeout(() => setUniverse(hashLife(universe)), 0);
     }
-
-    const pastHistory = runOneStepBackward(history);
-
-    const gameId = window.setTimeout(() => runGameBackward(pastHistory), 1);
-    setGameId(gameId);
-  };
-
-  const runGame = (
-    currentUniverse: UniverseType,
-    history: UniverseType[]
-  ): void => {
-    setPlaying(true);
-    const [newUniverse, newHistory] = runOneStepForward(
-      currentUniverse,
-      history
-    );
-
-    if (noChangesInTheUniverse(currentUniverse, newUniverse)) {
-      stopGame();
-      return;
-    }
-
-    const gameId = window.setTimeout(() => runGame(newUniverse, newHistory), 1);
-    setGameId(gameId);
-  };
-
-  const stopGame = (): void => {
-    setPlaying(false);
-    clearTimeout(gameId);
-  };
-
-  const clearGame = (): void => {
-    setPlaying(false);
-    stopGame();
-    setUniverse(destroyUniverse(universe));
-    setHistory([]);
-  };
-
-  const runChaosMode = (): void => {
-    const chaosUniverse = makeUniverse(size, true);
-    setUniverse(chaosUniverse);
-    runGame(chaosUniverse, history);
-  };
-
-  const runOneStepForward = (
-    currentUniverse: UniverseType,
-    history: UniverseType[]
-  ): [UniverseType, UniverseType[]] => {
-    const newUniverse = advanceGeneration(currentUniverse);
-    const newHistory = [...history, currentUniverse];
-    setUniverse(newUniverse);
-    setHistory(newHistory);
-
-    return [newUniverse, newHistory];
-  };
-
-  const runOneStepBackward = (history: UniverseType[]): UniverseType[] => {
-    const pastUniverse = history[history.length - 1];
-    const pastHistory = [...history.slice(0, history.length - 1)];
-    setUniverse(pastUniverse);
-    setHistory(pastHistory);
-
-    return pastHistory;
-  };
+  }, [universe, running]);
 
   return (
     <GameStyled>
       <GameControls
-        runChaosMode={runChaosMode}
-        runGame={runGame}
-        runGameBackward={runGameBackward}
-        stopGame={stopGame}
-        clearGame={clearGame}
-        universe={universe}
-        history={history}
-        playing={playing}
-        runOneStepForward={runOneStepForward}
-        runOneStepBackward={runOneStepBackward}
+        running={running}
+        runGame={() => {
+          setRunning(true);
+          const newGenerationUniverse = hashLife(universe);
+          setUniverse(newGenerationUniverse);
+        }}
+        setRandomUniverse={() => setUniverse(generateRandomArray(size, size))}
+        stopGame={() => setRunning(false)}
+        clear={() => {
+          setUniverse(generateEmptyArray(size, size));
+        }}
       />
-      <DeclaimerStyled>
-        You can click on organism to make it alive or dead and set initial
-        universe state.
-      </DeclaimerStyled>
-      <GameGrid
-        universe={universe}
-        setUniverse={setUniverse}
-        size={size}
-        organismSize={organismSize}
-      />
+      <GameGrid universe={universe} size={size} />
       <GlobalStyle />
     </GameStyled>
   );

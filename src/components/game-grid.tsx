@@ -1,47 +1,44 @@
 import React from "react";
 import styled from "styled-components";
-import { UniverseType } from "../game-of-life";
-import Organism from "./organism";
+import { Cell } from "../game-of-life";
 
-const GameGridStyled = styled.div<{ size: number; organismSize: string }>`
+const GameGridStyled = styled.div<{ gridSize: number }>`
   justify-content: center;
   display: grid;
   grid-template-columns: repeat(
-    ${({ size }) => size},
-    ${({ organismSize }) => organismSize}
+    ${({ gridSize }) => gridSize},
+    ${({ gridSize }) => `${100 / gridSize}vw`}
   );
   grid-template-rows: repeat(
-    ${({ size }) => size},
-    ${({ organismSize }) => organismSize}
+    ${({ gridSize }) => gridSize},
+    ${({ gridSize }) => `${100 / gridSize}vh`}
   );
+`;
+
+const CellStyled = styled.div<{ alive: boolean }>`
+  width: 100%;
+  height: 100%;
+  background-color: ${({ alive }) => (!alive ? "white" : "yellow")};
+  border: 1px solid black;
+  box-sizing: border-box;
 `;
 
 interface GameGrid {
   size: number;
-  organismSize: string;
-  universe: UniverseType;
-  setUniverse: (universe: UniverseType) => void;
+  universe: Cell[][];
 }
 
-const GameGrid: React.FC<GameGrid> = ({
-  setUniverse,
-  size,
-  organismSize,
-  universe,
-}) => {
+const GameGrid: React.FC<GameGrid> = ({ size, universe }) => {
   return (
-    <GameGridStyled size={size} organismSize={organismSize}>
-      {Object.keys(universe).map((coordinates) => {
-        return (
-          <Organism
-            key={coordinates}
-            universe={universe}
-            setUniverse={setUniverse}
-            coordinates={coordinates}
-          />
-        );
-      })}
-    </GameGridStyled>
+    <>
+      <GameGridStyled gridSize={size}>
+        {universe.map((row) => {
+          return row.map((col) => {
+            return <CellStyled alive={Boolean(col)} />;
+          });
+        })}
+      </GameGridStyled>
+    </>
   );
 };
 
